@@ -172,6 +172,8 @@ dynarray *dynarray_new();
  *     dynarray_free(&d);
  *     free(&d) // WRONG! //
  *
+ * See the examples for more information.
+ *
  * @param d The @ref dynarray to free.
  * @param deep Whether or not to invoke `free()` on the elements of the array
  */
@@ -197,11 +199,101 @@ void dynarray_free(dynarray *d, bool deep);
  * @see dynarray_alloc_size
  */
 void *dynarray_append(dynarray *d, void *obj);
+/**
+ * @brief Set element by index
+ *
+ * This function overwrites an element of the array. `index` is required to be less than the length of the array, otherwise
+ * the operation is attempted out of bounds. In this case, the function will fail to accomplish the goal. Even if `index` is equal
+ * to the array length, the object is **not** appended.
+ *
+ * **Notes**
+ *
+ * `index` must be the index of an element already in the array, otherwise the function will not perform the
+ * operation.
+ *
+ * @param d The @ref dynarray
+ * @param index The element index in the array
+ * @param obj The pointer that needs to be appended after the end
+ * @return `NULL` in case of failure, `obj` otherwise
+ *
+ * @see dynarray_append, dynarray_get, dynarray_length
+ */
 void *dynarray_set(dynarray *d, size_t index, void *obj);
+/**
+ * @brief Get element by index
+ *
+ * This function retrieves an element from the array. `index` is required to be less than the length of the array, otherwise
+ * the operation is attempted out of bounds. In this case, the function will fail to accomplish the goal and `NULL` is
+ * returned.
+ *
+ * **Notes**
+ *
+ * `index` must be the index of an element already in the array, otherwise the function will not perform the
+ * operation. Since `NULL` is technically a valid entry, checking whether an index is valid by comparing this function's
+ * return value and `NULL` does not work. Even if you are certain that no element of the array may be `NULL`, this is
+ * not worth it. See the macro @ref dynarray_valid_index for that.
+ *
+ * We have also provided the macro @ref dynarray_at that performs the same operation and is slightly more performant, however this function is type-safe
+ * and performs index bounds checking, whereas the macro's usage results in undefined behaviour if the index is invalid.
+ *
+ * @param d The @ref dynarray
+ * @param index The element index in the array
+ * @return `NULL` in case of failure, the entry pointer otherwise
+ *
+ * @see dynarray_append, dynarray_at, dynarray_length
+ */
 void *dynarray_get(dynarray *d, size_t index);
 
+/**
+ * @brief Removes the first occurrence of the pointer within the array
+ *
+ * If the element is not found within the array, `false` is returned.
+ *
+ * **Notes**
+ *
+ * The object is not deallocated. This function also reallocates the element array using `realloc`. If `realloc` fails, the operation
+ * is aborted and `false` is returned. The buffer is not shrunk.
+ *
+ * @param d The @ref dynarray
+ * @param obj The entry to remove
+ * @return `true` if the entry could be deleted, `false` otherwise
+ *
+ * @see dynarray_remove_all, @ref dynarray_remove_index
+ */
 bool dynarray_remove_first(dynarray *d, void *obj);
+/**
+ * @brief Removes all occurrences of the pointer within the array
+ *
+ * If the element is not found anywhere within the array, `false` is returned.
+ *
+ * **Notes**
+ *
+ * The object is not deallocated. This function also reallocates the element array using `realloc`. If `realloc` fails, the operation
+ * is aborted and `false` is returned. The buffer is not shrunk.
+ *
+ * @param d The @ref dynarray
+ * @param obj The entry to remove
+ * @return `true` if the entry could be deleted, `false` otherwise
+ *
+ * @see dynarray_remove_first, @ref dynarray_remove_index
+ */
 bool dynarray_remove_all(dynarray *d, void *obj);
+/**
+ * @brief Removes an element pointer within the array by index
+ *
+ * If the index is out of bounds, `false` is returned.
+ *
+ * **Notes**
+ *
+ * The object is not deallocated. This function also reallocates the element array using `realloc`. If `realloc` fails, the operation
+ * is aborted and `false` is returned. The buffer is not shrunk.
+ *
+ * @param d The @ref dynarray
+ * @param index The index of the entry to remove
+ * @return `true` if the entry could be deleted, `false` otherwise
+ *
+ * @see dynarray_remove_first, @ref dynarray_remove_all, @ref dynarray_pop
+ */
 bool dynarray_remove_index(dynarray *d, size_t index);
 
 /**
@@ -234,6 +326,22 @@ void dynarray_foreach(dynarray *d, clz_consumer c);
 void dynarray_foreach_if(dynarray *d, clz_predicate p, clz_consumer c);
 void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, clz_consumer elsec);
 
+/**
+ * @brief Removes the last element pointer within the array and returns it
+ *
+ * If the array is empty, `NULL` is returned. Keep in mind that `NULL` is a valid entry, as such comparing the return
+ * value to `NULL` to check whether the list is empty may not be a good idea, depending on whether `NULL` pointers could
+ * have been added to the array.
+ *
+ * **Notes**
+ *
+ * The object is not deallocated and the buffer is not shrunk.
+ *
+ * @param d The @ref dynarray
+ * @return The entry that was removed or `NULL` in case of failure
+ *
+ * @see dynarray_get, dynarray_at, dynarray_remove_first, @ref dynarray_remove_index
+ */
 void *dynarray_pop(dynarray *d);
 
 #endif
@@ -250,7 +358,8 @@ void *dynarray_pop(dynarray *d);
 #define dynarray_length(d) ((d)->data_size)
 #define dynarray_alloc_size(d) ((d)->alloc_size)
 #define dynarray_find_reset(d) ((d)->find_index = CLZ_FIND_INDEX_START)
-#define dynarray_at(d, index) (*((d)->ptr + index))
+#define dynarray_at(d, index) (*((d)->ptr + (index)))
+#define dynarray_valid_index(d, index) (dynarray_length(d) > (index))
 
 #endif
 

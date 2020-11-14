@@ -1,0 +1,7 @@
+dynarray ---------
+- remove_... : dont reallocate if it is the last element
+- remove_match: implement with double predicate
+- contains_match: "
+- dynarray_remove_all and dynarray_remove_index : bool tofree
+- dynarray_shrink: shrink data and alloc
+- dynarray_add_in: add element in the middle and shift later elements back
