@@ -16,47 +16,152 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file color.h
+ * @author Lorenzo Calza
+ * @date 13 Nov 2020
+ * @brief Header file containing the declarations for color console output utilities
+ *
+ * This header file contains the definitions of the color sequence macros and the standard output
+ * setting functions
+ *
+ * **Implementation**
+ *
+ * The implementation can be included if the macro `CLZ_COLOR_IMPL` is defined beforehand.
+ * If forward-declarations of the function prototypes can be skipped if the macro `CLZ_NO_COLOR_FUNCTIONS`
+ * is found to be defined. In this case, the implementation part is skipped too, regardless of whether the
+ * implementation flag is active or not.
+ */
+
 #ifndef _CLZ_COLOR_H
+/**
+ * @brief Include guard for this file.
+ */
 #define _CLZ_COLOR_H
 
+/**
+ * @brief Escape sequence for ASCII the escape sequence
+ */
 #define COL_ESC		 "\033"
+/**
+ * @brief Escape sequence for the ASCII red color
+ */
 #define COL_RED		 "\033[0;31m"
+/**
+ * @brief Escape sequence for the ASCII bold red color
+ */
 #define COL_BOLD_RED	 "\033[1;31m"
+/**
+ * @brief Escape sequence for the ASCII green color
+ */
 #define COL_GREEN	 "\033[0;32m"
+/**
+ * @brief Escape sequence for the ASCII bold green color
+ */
 #define COL_BOLD_GREEN	 "\033[1;32m"
+/**
+ * @brief Escape sequence for the ASCII yellow color
+ */
 #define COL_YELLOW	 "\033[0;33m"
+/**
+ * @brief Escape sequence for the ASCII bold yellow color
+ */
 #define COL_BOLD_YELLOW	 "\033[1;33m"
+/**
+ * @brief Escape sequence for the ASCII blue color
+ */
 #define COL_BLUE	 "\033[0;34m"
+/**
+ * @brief Escape sequence for the ASCII bold blue color
+ */
 #define COL_BOLD_BLUE	 "\033[1;34m"
+/**
+ * @brief Escape sequence for the ASCII magenta color
+ */
 #define COL_MAGENTA	 "\033[0;35m"
+/**
+ * @brief Escape sequence for the ASCII bold magenta color
+ */
 #define COL_BOLD_MAGENTA "\033[1;35m"
+/**
+ * @brief Escape sequence for the ASCII cyan color
+ */
 #define COL_CYAN	 "\033[0;36m"
+/**
+ * @brief Escape sequence for the ASCII bold cyan color
+ */
 #define COL_BOLD_CYAN	 "\033[1;36m"
+/**
+ * @brief Escape sequence for the ASCII reset sequence
+ */
 #define COL_RESET	 "\033[0m"
 
+#ifndef CLZ_NO_COLOR_FUNCTIONS
+/**
+ * @brief Sends the sequence for the color red through standard output
+ */
 void col_red();
+/**
+ * @brief Sends the sequence for the bold color red through standard output
+ */
 void col_bold_red();
 
+/**
+ * @brief Sends the sequence for the color green through standard output
+ */
 void col_green();
+/**
+ * @brief Sends the sequence for the bold color green through standard output
+ */
 void col_bold_green();
 
+/**
+ * @brief Sends the sequence for the color yellow through standard output
+ */
 void col_yellow();
+/**
+ * @brief Sends the sequence for the bold color yellow through standard output
+ */
 void col_bold_yellow();
 
+/**
+ * @brief Sends the sequence for the color blue through standard output
+ */
 void col_blue();
+/**
+ * @brief Sends the sequence for the blue color bold through standard output
+ */
 void col_bold_blue();
 
+/**
+ * @brief Sends the sequence for the color magenta through standard output
+ */
 void col_magenta();
+/**
+ * @brief Sends the sequence for the bold color magenta through standard output
+ */
 void col_bold_magenta();
 
+/**
+ * @brief Sends the sequence for the color cyan through standard output
+ */
 void col_cyan();
+/**
+ * @brief Sends the sequence for the bold color cyan through standard output
+ */
 void col_bold_cyan();
 
+#endif
+
+/**
+ * @brief Sends the sequence for the ASCII reset sequence through standard output
+ */
 void col_reset();
 #endif
 
-// IMPLEMENTATION
 #ifdef CLZ_COLOR_IMPL
+
+#ifndef CLZ_NO_COLOR_FUNCTIONS
 
 #include <stdio.h>
 
@@ -111,6 +216,8 @@ void col_bold_cyan() {
 void col_reset() {
     printf(COL_RESET);
 }
+
+#endif
 
 #endif
 
