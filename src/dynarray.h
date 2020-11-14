@@ -16,7 +16,26 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file dynarray.h
+ * @author Lorenzo Calza
+ * @date 13 Nov 2020
+ * @brief Header file containing the declarations for a dynamic array and its related functionalities
+ *
+ * This header file contains the definition of the @ref dynarray type and the functions which make up
+ * the API to use it.
+ *
+ * **Implementation**
+ *
+ * The implementation can be included if the macro `CLZ_DYNARRAY_IMPL` is defined beforehand. Some functionalities
+ * are implemented as macros for performance reasons. As such, it is possible to blend these out by defining the
+ * `CLZ_DYNARRAY_NO_MACROS` macro.
+ */
+
 #ifndef _CLZ_DYNARRAY_H
+/**
+ * @brief Include guard for this file.
+ */
 #define _CLZ_DYNARRAY_H
 
 #include <stddef.h>
@@ -25,17 +44,158 @@
 
 #include "def.h"
 
+/**
+ * @brief Definition of structure representing a dynamic array.
+ *
+ * The recommended way to interact with this struct is by using the API functions and macros.
+ * See the examples section for a tutorial on how to use this.
+ *
+ * **Notes**
+ *
+ * **Do not, under any circumstances, modify and values or pointers belonging to member fiends of this struct**.
+ * Use the provided API instead!
+ *
+ */
 typedef struct dynarray {
+    /**
+     * @brief The size of the allocation buffer
+     *
+     * This value is initialized to the value @ref CLZ_DYNARRAY_ALLOC, and increased dynamically
+     * as soon as the data size surpasses the allocation. Every time this happens, the previous value
+     * for the buffer size is doubled.
+     *
+     * **Notes**
+    *
+    * This value contains the buffer size in units of `sizeof(void *)`. This value can be checked safely
+    * with the macro @ref dynarray_alloc_size, provided the macros have not been deactivated with
+    * `CLZ_DYNARRAY_NO_MACROS`.
+     *
+     * @see dynarray_alloc_size, CLZ_DYNARRAY_ALLOC
+     */
     size_t alloc_size;
+    /**
+     * @brief The size of the array
+     *
+     * This value is initialized to `0`, and increased dynamically
+     * as the data grows, or decreased as the data shrinks.
+     *
+     * **Notes**
+     *
+     * This value contains the number of elements of the array. This value can be checked safely with the macro
+     * @ref dynarray_length, provided the macros have not been deactivated with `CLZ_DYNARRAY_NO_MACROS`.
+     *
+     * @see dynarray_length
+     */
     size_t data_size;
+    /**
+     * @brief The array
+     *
+     * This variable holds a dynamically allocated (read: `malloc` family) array of `void *`-pointers. You can use
+     * the function @ref dynarray_get or the macro @ref dynarray_at, though the latter required that the macro definitions
+     * have not been deactivated with `CLZ_DYNARRAY_NO_MACROS`.
+     *
+     * @see dynarray_get, dynarray_at
+     */
     void **ptr;
+    /**
+     * @brief Internal variable holding the last index of the @ref dynarray_find_next search function.
+     *
+     * **Notes**
+     *
+     * This is an internal variable that is not meant to be accessed in any way. Its value is initialised to @ref CLZ_FIND_INDEX_START.
+     * It can and should be reset to that value with the macro @ref dynarray_find_reset after the @ref dynarray_find_next search is concluded.
+     *
+     * @see dynarray_find_next, dynarray_find_reset
+     */
     int find_index;
 } dynarray;
 
+/**
+ * @brief Initializes a new @ref dynarray struct.
+ *
+ * This function makes use of dynamic allocation (see `malloc` family). As such, it could _fail_
+ * if heap allocation fails.
+ *
+ * **Notes**
+ *
+ * When finished using it, the function @ref dynarray_free must be invoked to free the internal allocations
+ * made by this function.
+ *
+ * This function (if successful) returns the `ptr` buffer (see @ref dynarray). It does **not** return a pointer
+ * to the @ref dynarray, which is a big difference from the @ref dynarray_new function.
+ *
+ * @param d The pointer to the array struct
+ * @return The pointer to the buffer array (`dynarray.ptr`) if successful, `NULL` otherwise
+ *
+ * @see dynarray_new, @see dynarray_free
+ */
 void *dynarray_init(dynarray *d);
+/**
+ * @brief Allocates a new `dynarray` struct object on the heap and returns its pointer.
+ *
+ * Since the `malloc` family is used internally, heap allocation may fail. In this case, `NULL` is returned.
+ *
+ * **Notes**
+ *
+ * When finished using it, the function @ref dynarray_free must be invoked to free the internal allocations
+ * made by this function.
+ *
+ * @return The pointer to the @ref dynarray if successful, `NULL` otherwise
+ *
+ * @see dynarray_init, @see dynarray_free
+ */
 dynarray *dynarray_new();
+/**
+ * @brief Frees the internal allocations of the dynarray
+ *
+ * When the dynarray is no longer used, this function should be invoked for cleanup.
+ *
+ * It is also possible to deallocate (`free`) the pointer-elements of the array by passing the value `true` to the (`stdbool.h`) `bool`
+ * type variable `deep`.
+ *
+ * **Notes**
+ *
+ * If the @ref dynarray itself was allocated on the heap, it must be freed separately **after** @ref dynarray_free has been called,
+ * as this function does not free it.
+ * Example:
+ *
+ *     dynarray *d = dynarray_new();
+ *     // ...
+ *     dynarray_free(d);
+ *     free(d);
+ *
+ * The reason why this behaviour is intended is that it is also possible to create a statically allocated @ref dynarray like this:
+ *
+ *     dynarray d;
+ *     dynarray_init(&d);
+ *     // ...
+ *     dynarray_free(&d);
+ *     free(&d) // WRONG! //
+ *
+ * @param d The @ref dynarray to free.
+ * @param deep Whether or not to invoke `free()` on the elements of the array
+ */
 void dynarray_free(dynarray *d, bool deep);
 
+/**
+ * @brief Append element after the end of the array
+ *
+ * This function appends the given pointer element after the end of the array. If the allocated buffer is full, the
+ * buffer is extended to account for the required memory. The initial buffer size is defined in @ref CLZ_DYNARRAY_ALLOC,
+ * and the size is doubled every time the buffer needs to be extended.
+ *
+ * **Notes**
+ *
+ * If the buffer needs to be extended, this is done by dynamic heap allocation. The functions that are part of the `malloc`
+ * family may fail and return `NULL`. If this is the case, `NULL` is returned to indicate failure. In case of success, `obj`
+ * itself is returned.
+ *
+ * @param d The @ref dynarray
+ * @param obj The pointer that needs to be appended after the end
+ * @return `NULL` in case of failure, `obj` otherwise
+ *
+ * @see dynarray_alloc_size
+ */
 void *dynarray_append(dynarray *d, void *obj);
 void *dynarray_set(dynarray *d, size_t index, void *obj);
 void *dynarray_get(dynarray *d, size_t index);
@@ -44,6 +204,27 @@ bool dynarray_remove_first(dynarray *d, void *obj);
 bool dynarray_remove_all(dynarray *d, void *obj);
 bool dynarray_remove_index(dynarray *d, size_t index);
 
+/**
+ * @brief Clears the array contents
+ *
+ * This function clears all array contents. The `bool` (C99, `stdbool.h`) parameter indicates
+ * whether or not to free the entries.
+ *
+ * **Notes**
+ *
+ * If the same pointer is contained by the array multiple times, passing `true` to `tofree` will fail
+ * and the program will crash because this function will attempt to free it twice. Use `true` for `tofree`
+ * at your own risk.
+ *
+ * This function does **not** reset buffer size to its default value. If you wish to wipe the data and create a
+ * new array with initial buffer size @ref CLZ_DYNARRAY_ALLOC, you probably need to deallocate the entire array
+ * with @ref dynarray_free and create a new one.
+ *
+ * @param d The dynarray
+ * @param tofree Whether or not to free the pointer-elements of the array
+ *
+ * @ref dynarray_free, dynarray_remove_all
+ */
 void dynarray_clear(dynarray *d, bool tofree);
 
 int dynarray_find_first(dynarray *d, void *obj);
@@ -57,17 +238,21 @@ void *dynarray_pop(dynarray *d);
 
 #endif
 
-#ifndef CLZ_DYNARRAY_MACRO
-#define CLZ_DYNARRAY_MACRO
+#ifndef _CLZ_DYNARRAY_MACRO
+#define _CLZ_DYNARRAY_MACRO
 
 #define CLZ_DYNARRAY_ALLOC 8
 #define CLZ_FIND_INDEX_START -1
 #define CLZ_NOT_FOUND -1
 
+#ifndef CLZ_DYNARRAY_NO_MACROS
+
 #define dynarray_length(d) ((d)->data_size)
 #define dynarray_alloc_size(d) ((d)->alloc_size)
 #define dynarray_find_reset(d) ((d)->find_index = CLZ_FIND_INDEX_START)
 #define dynarray_at(d, index) (*((d)->ptr + index))
+
+#endif
 
 #endif
 

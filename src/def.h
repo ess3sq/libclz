@@ -40,10 +40,10 @@
 
 /**
  * @brief Definition of a predicate function, aka a function which takes any kind of data and
- * returns a @ref bool truth value.
+ * returns a `bool` (C99, `stdbool.h`) truth value.
  *
  * This function is supposed to evaluate the argument based on some user-defined criteria, and return
- * a @ref bool value (as in logic predicates).
+ * a `bool` value (as in logic predicates).
  */
 typedef bool (*clz_predicate) (void *);
 
