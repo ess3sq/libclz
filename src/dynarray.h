@@ -1,5 +1,3 @@
-#define DEBUG(s) printf("(DEBUG) %s\n", s)
-
 #ifndef _CLZ_DYNARRAY_H
 #define _CLZ_DYNARRAY_H
 
@@ -9,7 +7,7 @@
 
 #include "def.h"
 
-typedef struct _dynarray {
+typedef struct dynarray {
     size_t alloc_size;
     size_t data_size;
     void **ptr;
@@ -37,6 +35,8 @@ void dynarray_foreach(dynarray *d, clz_consumer c);
 void dynarray_foreach_if(dynarray *d, clz_predicate p, clz_consumer c);
 void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, clz_consumer elsec);
 
+void *dynarray_pop(dynarray *d);
+
 #endif
 
 #ifndef CLZ_DYNARRAY_MACRO
@@ -49,6 +49,7 @@ void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, cl
 #define dynarray_length(d) ((d)->data_size)
 #define dynarray_alloc_size(d) ((d)->alloc_size)
 #define dynarray_find_reset(d) ((d)->find_index = CLZ_FIND_INDEX_START)
+#define dynarray_at(d, index) (*((d)->ptr + index))
 
 #endif
 
@@ -239,6 +240,13 @@ void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, cl
         }
         elsec(*(d->ptr + i));
     }
+}
+
+void *dynarray_pop(dynarray *d) {
+    if (d->data_size == 0) return NULL;
+    void *obj = dynarray_get(d, dynarray_length(d) - 1);
+    dynarray_remove_index(d, dynarray_length(d) - 1);
+    return obj;
 }
 
 #endif
