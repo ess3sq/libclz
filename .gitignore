@@ -13,3 +13,4 @@ test/
 *.stackdump
 
 main.c
+doxygen-dark-theme/
