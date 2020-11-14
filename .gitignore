@@ -1,0 +1,15 @@
+clztest
+install.sh
+test.sh
+
+CMakeLists.txt
+*.exe
+*.out
+html/
+latex/
+cmake-build-debug/
+test/
+.idea/
+*.stackdump
+
+main.c
