@@ -28,8 +28,7 @@
  * **Implementation**
  *
  * The implementation can be included if the macro `CLZ_DYNARRAY_IMPL` is defined beforehand. Some functionalities
- * are implemented as macros for performance reasons. As such, it is possible to blend these out by defining the
- * `CLZ_DYNARRAY_NO_MACROS` macro.
+ * are implemented as macros for performance reasons.
  */
 
 #ifndef _CLZ_DYNARRAY_H
@@ -91,8 +90,7 @@ typedef struct dynarray {
      * @brief The array
      *
      * This variable holds a dynamically allocated (read: `malloc` family) array of `void *`-pointers. You can use
-     * the function @ref dynarray_get or the macro @ref dynarray_at, though the latter required that the macro definitions
-     * have not been deactivated with `CLZ_DYNARRAY_NO_MACROS`.
+     * the function @ref dynarray_get or the macro @ref dynarray_at.
      *
      * @see dynarray_get, dynarray_at
      */
@@ -319,11 +317,94 @@ bool dynarray_remove_index(dynarray *d, size_t index);
  */
 void dynarray_clear(dynarray *d, bool tofree);
 
+/**
+ * @brief Return position of first occurrence of the pointer in the array.
+ *
+ * This function returns the index of the first occurrence of `obj` in `d`. If `obj` is not found anywhere,
+ * @ref CLZ_NOT_FOUND is returned.
+ *
+ * @param d The @ref dynarray
+ * @param obj The pointer-entry to look for
+ * @return The position of the element
+ */
 int dynarray_find_first(dynarray *d, void *obj);
+/**
+ * @brief Return position of next occurrence of the pointer in the array.
+ *
+ * This function returns the index of the next occurrence of `obj` in `d`. If `obj` is not found anywhere,
+ * @ref CLZ_NOT_FOUND is returned.
+ *
+ * The idea is that you can continue your search from the position where the last item was found.
+ *
+ * Example:
+ *
+ *     dynarray *d = dynarray_new();
+ *     // ...
+ *     int pos;
+ *     while ((pos = dynarray_find_next(d, obj)) != CLZ_NOT_FOUND) {
+ *         printf("Found obj at %d\n", pos);
+ *     }
+ *     dynarray_find_reset(d);
+ *     // ...
+ *     dynarray_free(d);
+ *
+ * The macro @ref dynarray_find_reset resets the search so that the dynarray is ready by the next time.
+ * If this macro is not invoked, the search will resume from the last index where a match was found. If the last search
+ * yielded @ref CLZ_NOT_FOUND, the search is not reset automatically and any further searches will yield @ref CLZ_NOT_FOUND
+ * until the search is reset.
+ *
+ * See the tutorial for more information.
+ *
+ * @param d The @ref dynarray
+ * @param obj The pointer-entry to look for
+ * @return The position of the element
+ *
+ * @see dynarray_find_first, dynarray_find_reset
+ */
 int dynarray_find_next(dynarray *d, void *obj);
 
+/**
+ * @brief Iterate through the array and performs a predefined operation on each pointer-element
+ *
+ * This function performs a trivial iteration across all array elements and invokes the @ref clz_consumer function `c` which was
+ * passed to the function on every entry pointer.
+ *
+ * @param d The @ref dynarray
+ * @param c The consumer which needs to be invoked on each element
+ *
+ * @see clz_consumer, dynarray_foreach_if, dynarray_foreach_if_else
+ */
 void dynarray_foreach(dynarray *d, clz_consumer c);
+/**
+ * @brief Iteratex through the array and performs a predefined operation on each pointer-element if a certain condition
+ * applies
+ *
+ * This function performs a trivial iteration across all array elements and invokes the @ref clz_consumer function `c` which was
+ * passed to the function on every entry pointer if and only if the @ref clz_predicate function `p` returns the `bool` (C99,
+ * `stdbool.h`) value `true`.
+ *
+ * @param d The @ref dynarray
+ * @param p The predicate which represents the `if`-conditional
+ * @param c The consumer which needs to be invoked on each element if the predicate evaluates to `true`
+ *
+ * @see clz_consumer, clz_predicate, dynarray_foreach, dynarray_foreach_if_else
+ */
 void dynarray_foreach_if(dynarray *d, clz_predicate p, clz_consumer c);
+/**
+ * @brief Iteratex through the array and performs an "if"-operation on each pointer-element if a certain condition
+ * applies, and an "else"-operation otherwise
+ *
+ * This function performs a trivial iteration across all array elements and invokes the @ref clz_consumer function `ifc` which was
+ * passed to the function on every entry pointer if and only if the @ref clz_predicate function `p` returns the `bool` (C99,
+ * `stdbool.h`) value `true`. If the predicate fails, the `elsec` consumer function is invoked on the entry-pointer.
+ *
+ * @param d The @ref dynarray
+ * @param p The predicate which represents the `if`-conditional
+ * @param ifc The consumer which needs to be invoked on each element if the predicate evaluates to `true`
+ * @param elsec The consumer which needs to be invoked on each element if the predicate evaluates to `false`
+ *
+ * @see clz_consumer, clz_predicate, dynarray_foreach, dynarray_foreach_if
+ */
 void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, clz_consumer elsec);
 
 /**
@@ -344,24 +425,15 @@ void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, cl
  */
 void *dynarray_pop(dynarray *d);
 
-#endif
-
-#ifndef _CLZ_DYNARRAY_MACRO
-#define _CLZ_DYNARRAY_MACRO
-
 #define CLZ_DYNARRAY_ALLOC 8
 #define CLZ_FIND_INDEX_START -1
 #define CLZ_NOT_FOUND -1
-
-#ifndef CLZ_DYNARRAY_NO_MACROS
 
 #define dynarray_length(d) ((d)->data_size)
 #define dynarray_alloc_size(d) ((d)->alloc_size)
 #define dynarray_find_reset(d) ((d)->find_index = CLZ_FIND_INDEX_START)
 #define dynarray_at(d, index) (*((d)->ptr + (index)))
 #define dynarray_valid_index(d, index) (dynarray_length(d) > (index))
-
-#endif
 
 #endif
 

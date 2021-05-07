@@ -96,7 +96,6 @@
  */
 #define COL_RESET	 "\033[0m"
 
-#ifndef CLZ_NO_COLOR_FUNCTIONS
 /**
  * @brief Sends the sequence for the color red through standard output
  */
@@ -150,8 +149,6 @@ void col_cyan();
  * @brief Sends the sequence for the bold color cyan through standard output
  */
 void col_bold_cyan();
-
-#endif
 
 /**
  * @brief Sends the sequence for the ASCII reset sequence through standard output

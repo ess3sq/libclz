@@ -5,3 +5,11 @@ dynarray ---------
 - dynarray_remove_all and dynarray_remove_index : bool tofree
 - dynarray_shrink: shrink data and alloc
 - dynarray_add_in: add element in the middle and shift later elements back
+
+files to add:
+- strbuf.h
+- list.h
+- set.h
+- map.h
+- set.h
+-
