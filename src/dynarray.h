@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "clz.h"
 #include "def.h"
 
 /**
@@ -66,8 +67,7 @@ typedef struct dynarray {
      * **Notes**
     *
     * This value contains the buffer size in units of `sizeof(void *)`. This value can be checked safely
-    * with the macro @ref dynarray_alloc_size, provided the macros have not been deactivated with
-    * `CLZ_DYNARRAY_NO_MACROS`.
+    * with the macro @ref dynarray_alloc_size.
      *
      * @see dynarray_alloc_size, CLZ_DYNARRAY_ALLOC
      */
@@ -81,7 +81,7 @@ typedef struct dynarray {
      * **Notes**
      *
      * This value contains the number of elements of the array. This value can be checked safely with the macro
-     * @ref dynarray_length, provided the macros have not been deactivated with `CLZ_DYNARRAY_NO_MACROS`.
+     * @ref dynarray_length.
      *
      * @see dynarray_length
      */
@@ -326,6 +326,8 @@ void dynarray_clear(dynarray *d, bool tofree);
  * @param d The @ref dynarray
  * @param obj The pointer-entry to look for
  * @return The position of the element
+ *
+ * @see dynarray_find_next, dynarray_find_reset
  */
 int dynarray_find_first(dynarray *d, void *obj);
 /**
@@ -426,8 +428,6 @@ void dynarray_foreach_if_else(dynarray *d, clz_predicate p, clz_consumer ifc, cl
 void *dynarray_pop(dynarray *d);
 
 #define CLZ_DYNARRAY_ALLOC 8
-#define CLZ_FIND_INDEX_START -1
-#define CLZ_NOT_FOUND -1
 
 #define dynarray_length(d) ((d)->data_size)
 #define dynarray_alloc_size(d) ((d)->alloc_size)
@@ -443,13 +443,14 @@ void *dynarray_init(dynarray *d) {
     d->alloc_size = CLZ_DYNARRAY_ALLOC;
     d->data_size = 0;
     d->ptr = (void **) calloc(CLZ_DYNARRAY_ALLOC, sizeof(void *));
-    printf("d->ptr = %p\n", (void*) d->ptr);
+    if (d->ptr == NULL) return NULL;
     d->find_index = CLZ_FIND_INDEX_START;
     return (void *) d->ptr;
 }
 
 dynarray *dynarray_new() {
     dynarray *d = malloc(sizeof(dynarray));
+    if (d == NULL) return NULL;
     if( dynarray_init(d)) {
         return d;
     }
