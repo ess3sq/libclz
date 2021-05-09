@@ -1,10 +1,11 @@
+//
+// Created by lorenzo on 09/05/2021.
+//
+
 #define CLZ_LOGGER_IMPL
 #include "src/logger.h"
-
-int main(int argc, char **argv) {
-    logger *log = logger_new(stdout, false, false, "server/worker-1");
-    logger_log(log, LOG_ERROR, "This is a test run. This is a veeeeeeeeeeeeeeeeeeeeeeeeery loooooooooooooong line.");
-    logger_log(log, LOG_ERROR, "This is a test run. This is a veeeeeeeeeeeeeeeeeeeeeeeeery loooooooooooooong line.");
-    logger_free(log, true);
-    return 0;
+int main() {
+    logger *log = logger_default();
+    logger_log(log, LOG_INFO, "Hello World!");
+    logger_logf(log, LOG_INFO, "%s, %s!", "Greetings", "Friend");
 }

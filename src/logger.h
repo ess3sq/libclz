@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 
 #include "clz.h"
 
@@ -188,9 +189,29 @@ void logger_free(logger *log, bool close);
  * @param level The severity level
  * @param line The message to write out
  *
- * @see logger.h, severity
+ * @see logger.h, severity, logger_logf
  */
 void logger_log(logger *log, enum logger_severity level, char *line);
+
+/**
+ * @brief Logs message using the given logger configuration and format string with variable args
+ *
+ * See @ref logger.h and @ref logger_severity for more information on the output format.
+ *
+ * Makes internal use of `vfprintf`.
+ *
+ * **Notes**
+ *
+ * If the file pointer has been closed, the program will crash.
+ *
+ * @param log The logger
+ * @param level The severity level
+ * @param fmt The format string
+ * @param ... The format args
+ *
+ * @see logger.h, severity, logger_log
+ */
+void logger_logf(logger *log, enum logger_severity level, char *fmt, ...);
 
 /**
  * @brief Shortcut for @ref logger_log with the @ref logger_severity level `LOG_INFO`
@@ -286,6 +307,8 @@ void logger_log(logger *log, enum logger_severity level, char *line) {
         }
 
         sprintf(datetime, "|%s%s|", date, time);
+        free(date);
+        free(time);
     }
 
     char *prefix = "";
@@ -296,6 +319,55 @@ void logger_log(logger *log, enum logger_severity level, char *line) {
 
     fprintf(log->out, "%s%s[%s] %s%s\n",
             datetime, strlen(datetime) > 0 ? " " : "", _logger_sev_level(level), prefix, line);
+    free(datetime);
+    free(prefix);
+}
+
+void logger_logf(logger *log, enum logger_severity level, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    // |2020-04-18 14:58:22| [DEBUG] (PREFIX) line-contents\n
+    char *datetime = "";
+    if (log-> date || log->time) {
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+        datetime = malloc(24);
+
+        char *date = malloc(12);
+        if (log->date) {
+            sprintf(date, "%04d-%02d-%02d%s", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, log->time ? " " : "");
+        }
+        else {
+            *date = '\0';
+        }
+
+        char *time = malloc(9);
+        if (log->time) {
+            sprintf(time, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+        }
+        else {
+            *time = '\0';
+        }
+
+        sprintf(datetime, "|%s%s|", date, time);
+        free(date);
+        free(time);
+    }
+
+    char *prefix = "";
+    if (log->prefix != NULL) {
+        prefix = malloc(strlen(log->prefix) + 4);
+        sprintf(prefix, "(%s) ", log->prefix);
+    }
+
+    fprintf(log->out, "%s%s[%s] %s",
+            datetime, strlen(datetime) > 0 ? " " : "", _logger_sev_level(level), prefix);
+    char *line = malloc(strlen(fmt) + 2);
+    sprintf(line, "%s\n", fmt);
+    vfprintf(log->out, line, args);
+    free(line);
+    free(datetime);
 }
 
 #endif
