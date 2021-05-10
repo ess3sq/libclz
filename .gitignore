@@ -13,4 +13,5 @@ test/
 *.stackdump
 
 main.c
+*test.c
 doxygen-dark-theme/
