@@ -44,7 +44,7 @@
 size_t strbuf_alloc_size(char *strbuf);
 bool strbuf_extend(char **dest, size_t minsize);
 
-        char *strbuf_new();
+char *strbuf_new();
 char *strbuf_new_size(size_t sz);
 void strbuf_free(char *strbuf);
 char *strbuf_clone(char *strbuf, bool bufsz);
@@ -52,6 +52,12 @@ char *strbuf_clone(char *strbuf, bool bufsz);
 bool strbuf_append_char(char **destbuf, char c);
 bool strbuf_append_str(char **destbuf, char *src);
 bool strbuf_append_strn(char **destbuf, char *src, size_t n);
+bool strbuf_append_int(char **destbuf, int i);
+bool strbuf_append_uint(char **destbuf, unsigned int i);
+bool strbuf_append_long(char **destbuf, long l);
+bool strbuf_append_ulong(char **destbuf, unsigned long l);
+bool strbuf_append_llong(char **destbuf, long  long l);
+bool strbuf_append_ullong(char **destbuf, unsigned long long l);
 
 void strbuf_trim_index(char **destbuf, size_t start, size_t end);
 void strbuf_trim_length(char **destbuf, size_t length);
@@ -60,16 +66,22 @@ void strbuf_trim_head_char(char **destbuf, char c);
 void strbuf_trim_tail(char **destbuf);
 void strbuf_trim_tail_char(char **destbuf, char c);
 
-int strbuf_find_char(char **destbuf, char c);
+int strbuf_find_first_char(char **destbuf, char c);
+int strbuf_find_last_char(char **destbuf, char c);
 int strbuf_replace_first_char(char **destbuf, char c, char v);
 size_t strbuf_replace_all_char(char **destbuf, char c, char v);
 
-int strbuf_find_str(char **destbuf, char *s);
+int strbuf_find_first_str(char **destbuf, char *s);
+int strbuf_find_last_str(char **destbuf, char *s);
 int strbuf_replace_first_str(char **destbuf, char *s, char *t);
-//size_t strbuf_replace_all_str(char **destbuf, char *s, char *t);
+size_t strbuf_replace_all_str(char **destbuf, char *s, char *t);
+
+bool strbuf_remove_char(char **destbuf, size_t index);
+bool strbuf_remove_str(char **destbuf, size_t start, size_t end);
 
 void strbuf_to_lowercase(char **destbuf);
 void strbuf_to_uppercase(char **destbuf);
+void strbuf_reverse(char **destbuf);
 
 #define CLZ_STRBUF_ALLOC 32
 
@@ -80,6 +92,7 @@ void strbuf_to_uppercase(char **destbuf);
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 size_t strbuf_alloc_size(char *strbuf) {
     return *(((size_t *) strbuf) - 1);
@@ -90,6 +103,7 @@ char *strbuf_new() {
 
 char *strbuf_new_size(size_t sz) {
     size_t *sb = malloc(CLZ_STRBUF_ALLOC * sizeof(char) + sizeof(size_t));
+    if (sb == NULL) return NULL;
     *sb = sz;
     return (char *) (sb + 1);
 }
@@ -116,6 +130,48 @@ bool strbuf_append_strn(char **dest, char *src, size_t n) {
     }
     strncpy(*dest + strlen(*dest), src, n);
     return true;
+}
+
+bool strbuf_append_int(char **destbuf, int i) {
+    char val[12]; // max int has 10 digits plus one potential sign and null-terminator
+    sprintf(val, "%d", i);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
+}
+
+bool strbuf_append_uint(char **destbuf, unsigned int i) {
+    char val[11]; // max uint has 10 digits plus null-terminator
+    sprintf(val, "%u", i);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
+}
+
+bool strbuf_append_long(char **destbuf, long l) {
+    char val[21]; // max long has 19 digits plus one potential sign and null-terminator
+    sprintf(val, "%ld", l);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
+}
+
+bool strbuf_append_ulong(char **destbuf, unsigned long l) {
+    char val[21]; // max long has 20 digits plus null-terminator
+    sprintf(val, "%lu", l);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
+}
+
+bool strbuf_append_llong(char **destbuf, long long l) {
+    char val[21]; // max long has 19 digits plus one potential sign and null-terminator
+    sprintf(val, "%lld", l);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
+}
+
+bool strbuf_append_ullong(char **destbuf, unsigned long long l) {
+    char val[21]; // max long has 20 digits plus null-terminator
+    sprintf(val, "%llu", l);
+    bool ret = strbuf_append_str(destbuf, val);
+    return ret;
 }
 
 bool strbuf_extend(char **dest, size_t minsize) {
@@ -177,15 +233,21 @@ void strbuf_trim_tail_char(char **dest, char c) {
 }
 
 char *strbuf_clone(char *strbuf, bool bufsz) {
-    char *newbuf = strbuf_new();
+    char *newbuf;
     if (bufsz) {
-        strbuf_extend(&newbuf, strbuf_alloc_size(strbuf));
+        newbuf = strbuf_new_size(strbuf_alloc_size(strbuf));
+    } else {
+        size_t s = 2;
+        while (s <= strlen(strbuf) || s < CLZ_STRBUF_ALLOC) {
+            s *= 2;
+        }
+        newbuf = strbuf_new_size(s);
     }
     strbuf_append_str(&newbuf, strbuf);
     return newbuf;
 }
 
-int strbuf_find_char(char **destbuf, char c) {
+int strbuf_find_first_char(char **destbuf, char c) {
     for (int i = 0; i < strlen(*destbuf); ++i) {
         if ((*destbuf)[i] == c) return i;
     }
@@ -193,7 +255,7 @@ int strbuf_find_char(char **destbuf, char c) {
 }
 
 int strbuf_replace_first_char(char **destbuf, char c, char v) {
-    int i = strbuf_find_char(destbuf, c);
+    int i = strbuf_find_first_char(destbuf, c);
     if (i == CLZ_NOT_FOUND) return CLZ_NOT_FOUND;
     (*destbuf)[i] = v;
 }
@@ -209,20 +271,31 @@ size_t strbuf_replace_all_char(char **destbuf, char c, char v) {
     return count;
 }
 
-int strbuf_find_str(char **destbuf, char *s) {
+int strbuf_find_last_char(char **destbuf, char c) {
+    for (int i = strlen(*destbuf) - 1; i >= 0; --i) {
+        if ((*destbuf)[i] == c) return i;
+    }
+    return CLZ_NOT_FOUND;
+}
+
+int strbuf_find_first_str(char **destbuf, char *s) {
     size_t len = strlen(s);
     for (int i = 0; i < strlen(*destbuf); ++i) {
-        int j;
-        for (j = 0; j < len; ++j) {
-            if ((*destbuf)[i + j] != s[j]) break;
-        }
-        if (j == len) return i;
+        if (!strncmp(*destbuf + i, s, len)) return i;
+    }
+    return CLZ_NOT_FOUND;
+}
+
+int strbuf_find_last_str(char **destbuf, char *s) {
+    size_t len = strlen(s);
+    for (int i = strlen(*destbuf) - 1; i >= 0; --i) {
+        if (!strncmp(*destbuf + i, s, strlen(s))) return i;
     }
     return CLZ_NOT_FOUND;
 }
 
 int strbuf_replace_first_str(char **destbuf, char *s, char *t) {
-    int ind = strbuf_find_str(destbuf, s);
+    int ind = strbuf_find_first_str(destbuf, s);
     if (ind == CLZ_NOT_FOUND) return CLZ_NOT_FOUND;
 
     char *start = strbuf_clone(*destbuf, false);
@@ -244,14 +317,42 @@ int strbuf_replace_first_str(char **destbuf, char *s, char *t) {
 /*
 size_t strbuf_replace_all_str(char **destbuf, char *s, char *t) {
     size_t count = 0;
-    if (strbuf_find_str(destbuf, s) == CLZ_NOT_FOUND) return 0;
+    char *cpy = strbuf_clone(*destbuf);
+    **destbuf = 0;
 
-    int i = 0, j;
-    while (i != strlen(*destbuf)) {
-        j = strbuf_find_str(destbuf, s);
-        //if (j )
+    int i, j;
+    for (i = 0, j = 0; i < strlen(cpy) && (j = strbuf_find_first_str(&(cpy + i), s) != CLZ_NOT_FOUND; ++count) {
+        strbuf_replace_first_string(destbuf)
     }
+    free(cpy);
+    return count;
 }*/
+
+bool strbuf_remove_char(char **destbuf, size_t index) {
+    if (index >= strlen(*destbuf)) return false;
+    char *newbuf = strbuf_new_size(strbuf_alloc_size(*destbuf));
+    if (!newbuf) return false;
+    strbuf_append_strn(&newbuf, *destbuf, index);
+    strbuf_append_str(&newbuf, *destbuf + index + 1);
+    strbuf_free(*destbuf);
+    *destbuf = newbuf;
+    return true;
+}
+
+bool strbuf_remove_str(char **destbuf, size_t start, size_t end) {
+    if (start >= end) return false;
+    size_t len = strlen(*destbuf);
+    if (start >= len) return false;
+    else if (end >= len) end = len;
+
+    char *newbuf = strbuf_new_size(strbuf_alloc_size(*destbuf));
+    if (!newbuf) return NULL;
+    strbuf_append_strn(&newbuf, *destbuf, start);
+    strbuf_append_str(&newbuf, *destbuf + end);
+    strbuf_free(*destbuf);
+    *destbuf = newbuf;
+    return true;
+}
 
 void strbuf_to_lowercase(char **destbuf) {
     for (int i = 0; i < strlen(*destbuf); ++i) {
@@ -267,6 +368,15 @@ void strbuf_to_uppercase(char **destbuf) {
             (*destbuf)[i] = toupper((*destbuf)[i]);
         }
     }
+}
+
+void strbuf_reverse(char **destbuf) {
+    char *cpy = strdup(*destbuf);
+    size_t len = strlen(*destbuf);
+    for (int i = 0; i < len; ++i) {
+        (*destbuf)[i] = cpy[len - 1 - i];
+    }
+    free(cpy);
 }
 
 #endif

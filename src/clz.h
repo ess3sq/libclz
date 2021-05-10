@@ -24,7 +24,7 @@
  *
  * This header file contains the definitions of general functions such as library version and implementation constants
  * such as @ref CLZ_NOT_FOUND which are used across the implementations of several data structures such as
- * @ref dynarray and @ref strbuf.
+ * @ref dynarray.
  *
  */
 
