@@ -59,12 +59,25 @@ bool strbuf_append_ulong(char **destbuf, unsigned long l);
 bool strbuf_append_llong(char **destbuf, long  long l);
 bool strbuf_append_ullong(char **destbuf, unsigned long long l);
 
+bool strbuf_insert_char(char **destbuf, char c, size_t index);
+bool strbuf_insert_str(char **destbuf, char *s, size_t index);
+bool strbuf_insert_strn(char **destbuf, char *s, size_t index, size_t maxlen);
+bool strbuf_insert_int(char **destbuf, int i, size_t index);
+bool strbuf_insert_uint(char **destbuf, unsigned int i, size_t index);
+bool strbuf_insert_long(char **destbuf, long l, size_t index);
+bool strbuf_insert_ulong(char **destbuf, unsigned long l, size_t index);
+bool strbuf_insert_llong(char **destbuf, long long l, size_t index);
+bool strbuf_insert_ullong(char **destbuf, unsigned long long l, size_t index);
+
 void strbuf_trim_index(char **destbuf, size_t start, size_t end);
 void strbuf_trim_length(char **destbuf, size_t length);
 void strbuf_trim_head(char **destbuf);
 void strbuf_trim_head_char(char **destbuf, char c);
 void strbuf_trim_tail(char **destbuf);
 void strbuf_trim_tail_char(char **destbuf, char c);
+
+bool strbuf_padding_head(char **destbuf, char c, size_t sz);
+bool strbuf_padding_tail(char **destbuf, char c, size_t sz);
 
 int strbuf_find_first_char(char **destbuf, char c);
 int strbuf_find_last_char(char **destbuf, char c);
@@ -174,6 +187,82 @@ bool strbuf_append_ullong(char **destbuf, unsigned long long l) {
     return ret;
 }
 
+bool strbuf_insert_char(char **destbuf, char c, size_t index) {
+    if (index > strlen(*destbuf)) return false;
+    char *bufnew = strbuf_new_size(strbuf_alloc_size(*destbuf) + 1);
+    strbuf_append_strn(&bufnew, *destbuf, index);
+    strbuf_append_char(&bufnew, c);
+    strbuf_append_str(&bufnew, *destbuf + index);
+    strbuf_free(*destbuf);
+    *destbuf = bufnew;
+    return true;
+}
+
+bool strbuf_insert_str(char **destbuf, char *s, size_t index) {
+    strbuf_insert_strn(destbuf, s, index, strlen(s));
+}
+
+bool strbuf_insert_strn(char **destbuf, char *s, size_t index, size_t maxlen) {
+    if (index > strlen(*destbuf)) return false;
+    size_t len_s = strlen(s);
+    if (maxlen > len_s) maxlen = len_s;
+    char *bufnew = strbuf_new_size(strbuf_alloc_size(*destbuf) + maxlen);
+    strbuf_append_strn(&bufnew, *destbuf, index);
+    strbuf_append_strn(&bufnew, s, maxlen);
+    strbuf_append_str(&bufnew, *destbuf + index);
+    strbuf_free(*destbuf);
+    *destbuf = bufnew;
+    return true;
+}
+
+bool strbuf_insert_int(char **destbuf, int i, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_int(&intbuf, i);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
+bool strbuf_insert_uint(char **destbuf, unsigned int i, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_uint(&intbuf, i);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
+bool strbuf_insert_long(char **destbuf, long l, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_long(&intbuf, l);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
+bool strbuf_insert_ulong(char **destbuf, unsigned long l, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_ulong(&intbuf, l);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
+bool strbuf_insert_llong(char **destbuf, long long l, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_llong(&intbuf, l);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
+bool strbuf_insert_ullong(char **destbuf, unsigned long long l, size_t index) {
+    char *intbuf = strbuf_new();
+    strbuf_append_ullong(&intbuf, l);
+    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    strbuf_free(intbuf);
+    return ret;
+}
+
 bool strbuf_extend(char **dest, size_t minsize) {
     size_t sz;
     for (sz = strbuf_alloc_size(*dest); sz < minsize; sz *= 2);
@@ -230,6 +319,28 @@ void strbuf_trim_tail_char(char **dest, char c) {
     for (; tail != *dest - 1 && *tail == c; --tail) {
         *tail = 0;
     }
+}
+
+bool strbuf_padding_head(char **destbuf, char c, size_t sz) {
+    size_t len = strlen(*destbuf);
+    if (len > sz) return false;
+    else if (len == sz) return true;
+    size_t padlen = sz - len;
+    char *padbuf = malloc(padlen + 1);
+    memset(padbuf, c, padlen);
+    strbuf_insert_str(destbuf, padbuf, 0);
+    free(padbuf);
+}
+
+bool strbuf_padding_tail(char **destbuf, char c, size_t sz) {
+    size_t len = strlen(*destbuf);
+    if (len > sz) return false;
+    else if (len == sz) return true;
+    size_t padlen = sz - len;
+    char *padbuf = malloc(padlen + 1);
+    memset(padbuf, c, padlen);
+    strbuf_append_str(destbuf, padbuf);
+    free(padbuf);
 }
 
 char *strbuf_clone(char *strbuf, bool bufsz) {
