@@ -17,16 +17,24 @@
  */
 
 /**
+ *
+ * This header file contains the definitions of general functions such as library version and implementation constants
+ * such as @ref CLZ_NOT_FOUND which are used across the implementations of several data structures such as
+ * @ref dynarray. his header file also contains the definitions of many types and type-like constructions (read: `typedef`),
+ * including the function types @ref clz_predicate and @ref clz_consumer.
+ *
+ * **Implementation**
+ *
+ * There is no implementation section, as this header file contains only type definitions.
+ *
  * @file clz.h
  * @author Lorenzo Calza
  * @date 8 May 2021
  * @brief Header file containing the declarations for general constants concerning the library
  *
- * This header file contains the definitions of general functions such as library version and implementation constants
- * such as @ref CLZ_NOT_FOUND which are used across the implementations of several data structures such as
- * @ref dynarray.
- *
  */
+
+#include <stdbool.h>
 
 #ifndef _CLZ_H
 #define _CLZ_H
@@ -35,5 +43,23 @@
 
 #define CLZ_FIND_INDEX_START -1
 #define CLZ_NOT_FOUND -1
+
+/**
+ * @brief Definition of a predicate function, aka a function which takes any kind of data and
+ * returns a `bool` (C99, `stdbool.h`) truth value.
+ *
+ * This function is supposed to evaluate the argument based on some user-defined criteria, and return
+ * a `bool` value (as in logic predicates).
+ */
+typedef bool (*clz_predicate) (void *);
+
+/**
+ * @brief Definition of a consumer function, aka a function which takes any kind of data and
+ * performs a series of operations on it.
+ *
+ * This function is supposed to process the argument without returning any kind of feedback to the
+ * calling routine (hence _consume_).
+ */
+typedef void (*clz_consumer) (void *);
 
 #endif
