@@ -1,3 +1,2 @@
 1. Stricter malloc checks
 2. Better 2^x finding
-3. Add strbuf_new_str(char *s) (like strbuf_clone but for non-bufs).

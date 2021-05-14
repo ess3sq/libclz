@@ -122,6 +122,24 @@ char *strbuf_new();
  */
 char *strbuf_new_size(size_t sz);
 /**
+ * @brief Creates a string buffer with the contents of the given C-string.
+ *
+ * This function allocates a proper buffer size (power of 2) and copies over the bytes from `s`.
+ * The new string buffer is a fully fledged buffer that can be operated on using all buffer functions
+ * from @ref strbuf.h, and has to be freed using `strbuf_free` after usage.
+ *
+ * Since dynamic allocation is used, failure is possible. In this case, `NULL` is returned and `errno`
+ * is meant to be set to `ENOMEM`.
+ *
+ * If you wish to create a string buffer from another proper buffer, see @ref strbuf_new_clone.
+ *
+ * @param s The string to copy over
+ * @return the new buffer
+ *
+ * @see strbuf_clone, strbuf_free
+ */
+char *strbuf_new_str(char *s);
+/**
  * @brief Frees previously allocated `strbuf`.
  *
  * This function frees a buffer previously allocated with @ref strbuf_new or @ref strbuf_new_size.
@@ -150,6 +168,8 @@ void strbuf_free(char *strbuf);
  * If not, the new buffer will have a size just large enough to hold the contents up to the null-terminator,
  * while still being a power of 2.
  *
+ * If you wish to create a string buffer from a regular C-string, see @ref strbuf_new_str.
+ *
  * **Notes**
  *
  * Similar to the case of buffers returned by @ref strbuf_new and @ref strbuf_new_size, you should always
@@ -160,7 +180,7 @@ void strbuf_free(char *strbuf);
  * @param bufsz Whether or not to use the same buffer size as the original buffer
  * @return The new strbuf
  *
- * @see strbuf_new, strbuf_free, strbuf_alloc_size
+ * @see strbuf_new, strbuf_free, strbuf_alloc_size, strbuf_new_str
  */
 char *strbuf_clone(char *strbuf, bool bufsz);
 
@@ -978,6 +998,10 @@ char *strbuf_new_size(size_t sz) {
     if (sb == NULL) return NULL;
     *sb = sz;
     return (char *) (sb + 1);
+}
+
+char *strbuf_new_str(char *s) {
+    return strbuf_clone(s, false);
 }
 
 void strbuf_free(char *strbuf) {
