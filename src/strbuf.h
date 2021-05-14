@@ -1000,9 +1000,11 @@ char *strbuf_new() {
 }
 
 char *strbuf_new_size(size_t sz) {
-    size_t *sb = malloc(CLZ_STRBUF_ALLOC * sizeof(char) + sizeof(size_t));
+    size_t actualsz = 2;
+    while (actualsz < sz || actualsz < CLZ_STRBUF_ALLOC) actualsz <<= 1;
+    size_t *sb = malloc(actualsz * sizeof(char) + sizeof(size_t));
     if (sb == NULL) return NULL;
-    *sb = sz;
+    *sb = actualsz;
     return (char *) (sb + 1);
 }
 
@@ -1165,7 +1167,7 @@ bool strbuf_insert_ullong(char **destbuf, unsigned long long l, size_t index) {
 bool strbuf_resize(char **dest, size_t minsize) {
     size_t sz, len = strlen(*dest);
     if (len >= minsize + 1) return false;
-    for (sz = len + 1; sz < minsize; sz *= 2);
+    for (sz = len + 1; sz < minsize; sz <<= 1);
 
     char *newbuf = malloc(sz + sizeof(size_t));
     if (!newbuf) return false;
@@ -1260,7 +1262,7 @@ char *strbuf_clone(char *strbuf, bool bufsz) {
     } else {
         size_t s = 2;
         while (s <= strlen(strbuf) || s < CLZ_STRBUF_ALLOC) {
-            s *= 2;
+            s <<= 1;
         }
         newbuf = strbuf_new_size(s);
     }
