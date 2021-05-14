@@ -43,6 +43,7 @@
 
 #define CLZ_FIND_INDEX_START -1
 #define CLZ_NOT_FOUND -1
+#define CLZ_GENERAL_FAIL -2
 
 /**
  * @brief Definition of a predicate function, aka a function which takes any kind of data and

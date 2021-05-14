@@ -131,7 +131,7 @@ char *strbuf_new_size(size_t sz);
  * Since dynamic allocation is used, failure is possible. In this case, `NULL` is returned and `errno`
  * is meant to be set to `ENOMEM`.
  *
- * If you wish to create a string buffer from another proper buffer, see @ref strbuf_new_clone.
+ * If you wish to create a string buffer from another proper buffer, see @ref strbuf_clone.
  *
  * @param s The string to copy over
  * @return the new buffer
@@ -169,6 +169,9 @@ void strbuf_free(char *strbuf);
  * while still being a power of 2.
  *
  * If you wish to create a string buffer from a regular C-string, see @ref strbuf_new_str.
+ *
+ * Since heap allocation takes place, failure is possible. If this is the case, `NULL` is returned
+ * and `errno` is set to `ENOMEM` by `malloc`.
  *
  * **Notes**
  *
@@ -817,6 +820,9 @@ int strbuf_find_last_str(char **destbuf, char *s);
  * This function finds and replaces the first instance of `c` within the string with `v`.
  * If `c` is not found anywhere, @ref CLZ_NOT_FOUND is returned, otherwise the position will be returned.
  *
+ * This function makes use of heap allocation. If it fails, nothing is replaced and
+ * @ref CLZ_GENERAL_FAIL is returned.
+ *
  * @param destbuf The destination buffer
  * @param c The `char` to replace
  * @param v The replacement
@@ -1031,51 +1037,50 @@ bool strbuf_append_strn(char **dest, char *src, size_t n) {
 bool strbuf_append_int(char **destbuf, int i) {
     char val[12]; // max int has 10 digits plus one potential sign and null-terminator
     sprintf(val, "%d", i);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_append_uint(char **destbuf, unsigned int i) {
     char val[11]; // max uint has 10 digits plus null-terminator
     sprintf(val, "%u", i);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_append_long(char **destbuf, long l) {
     char val[21]; // max long has 19 digits plus one potential sign and null-terminator
     sprintf(val, "%ld", l);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_append_ulong(char **destbuf, unsigned long l) {
     char val[21]; // max long has 20 digits plus null-terminator
     sprintf(val, "%lu", l);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_append_llong(char **destbuf, long long l) {
     char val[21]; // max long has 19 digits plus one potential sign and null-terminator
     sprintf(val, "%lld", l);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_append_ullong(char **destbuf, unsigned long long l) {
     char val[21]; // max long has 20 digits plus null-terminator
     sprintf(val, "%llu", l);
-    bool ret = strbuf_append_str(destbuf, val);
-    return ret;
+    return strbuf_append_str(destbuf, val);
 }
 
 bool strbuf_insert_char(char **destbuf, char c, size_t index) {
     if (index > strlen(*destbuf)) return false;
     char *bufnew = strbuf_new_size(strbuf_alloc_size(*destbuf) + 1);
-    strbuf_append_strn(&bufnew, *destbuf, index);
-    strbuf_append_char(&bufnew, c);
-    strbuf_append_str(&bufnew, *destbuf + index);
+    if (!bufnew) return false;
+    bool ret = strbuf_append_strn(&bufnew, *destbuf, index)
+            && strbuf_append_char(&bufnew, c)
+            && strbuf_append_str(&bufnew, *destbuf + index);
+    if (!ret) {
+        strbuf_free(bufnew);
+        return false;
+    }
     strbuf_free(*destbuf);
     *destbuf = bufnew;
     return true;
@@ -1090,9 +1095,14 @@ bool strbuf_insert_strn(char **destbuf, char *s, size_t index, size_t maxlen) {
     size_t len_s = strlen(s);
     if (maxlen > len_s) maxlen = len_s;
     char *bufnew = strbuf_new_size(strbuf_alloc_size(*destbuf) + maxlen);
-    strbuf_append_strn(&bufnew, *destbuf, index);
-    strbuf_append_strn(&bufnew, s, maxlen);
-    strbuf_append_str(&bufnew, *destbuf + index);
+    if (!bufnew) return false;
+    bool ret = strbuf_append_strn(&bufnew, *destbuf, index)
+            && strbuf_append_strn(&bufnew, s, maxlen)
+            && strbuf_append_str(&bufnew, *destbuf + index);
+    if (!ret) {
+        strbuf_free(bufnew);
+        return false;
+    }
     strbuf_free(*destbuf);
     *destbuf = bufnew;
     return true;
@@ -1100,48 +1110,54 @@ bool strbuf_insert_strn(char **destbuf, char *s, size_t index, size_t maxlen) {
 
 bool strbuf_insert_int(char **destbuf, int i, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_int(&intbuf, i);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_int(&intbuf, i)
+            && strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
 
 bool strbuf_insert_uint(char **destbuf, unsigned int i, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_uint(&intbuf, i);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_uint(&intbuf, i)
+            && strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
 
 bool strbuf_insert_long(char **destbuf, long l, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_long(&intbuf, l);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_long(&intbuf, l)
+            && strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
 
 bool strbuf_insert_ulong(char **destbuf, unsigned long l, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_ulong(&intbuf, l);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_ulong(&intbuf, l)
+            && strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
 
 bool strbuf_insert_llong(char **destbuf, long long l, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_llong(&intbuf, l);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_llong(&intbuf, l)
+            && strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
 
 bool strbuf_insert_ullong(char **destbuf, unsigned long long l, size_t index) {
     char *intbuf = strbuf_new();
-    strbuf_append_ullong(&intbuf, l);
-    bool ret = strbuf_insert_str(destbuf, intbuf, index);
+    if (!intbuf) return false;
+    bool ret = strbuf_append_ullong(&intbuf, l) &&
+            strbuf_insert_str(destbuf, intbuf, index);
     strbuf_free(intbuf);
     return ret;
 }
@@ -1152,7 +1168,7 @@ bool strbuf_resize(char **dest, size_t minsize) {
     for (sz = len + 1; sz < minsize; sz *= 2);
 
     char *newbuf = malloc(sz + sizeof(size_t));
-    if (newbuf == NULL) return false;
+    if (!newbuf) return false;
 
     *((size_t *) newbuf) = sz;
     strcpy(newbuf + sizeof(size_t), *dest);
@@ -1177,6 +1193,7 @@ void strbuf_trim_index(char **destbuf, size_t start, size_t end) {
     else if (end == 0) return;
 
     char *cpy = malloc(end - start + 1);
+    if (!cpy) return;
     strncpy(cpy, *destbuf + start, end - start);
     strcpy(*destbuf, cpy);
     free(cpy);
@@ -1194,19 +1211,20 @@ void strbuf_trim_head_char(char **dest, char c) {
     char *head = *dest;
     for (; *head != 0 && *head == c; ++head);
     char *cpy = strdup(head);
+    if (!cpy) return;
     strcpy(*dest, head);
     free(cpy);
 }
 
 void strbuf_trim_tail(char **destbuf) {
-        strbuf_trim_tail_char(destbuf, ' ');
+    strbuf_trim_tail_char(destbuf, ' ');
 }
 
 void strbuf_trim_tail_char(char **dest, char c) {
     char *tail = *dest + strlen(*dest) - 1;
     for (; tail != *dest - 1 && *tail == c; --tail) {
-        *tail = 0;
     }
+    *++tail = 0;
 }
 
 bool strbuf_padding_head(char **destbuf, char c, size_t sz) {
@@ -1215,7 +1233,7 @@ bool strbuf_padding_head(char **destbuf, char c, size_t sz) {
     else if (len == sz) return true;
     size_t padlen = sz - len;
     char *padbuf = malloc(padlen + 1);
-    if (padbuf == NULL) return false;
+    if (!padbuf) return false;
     memset(padbuf, c, padlen);
     bool ret = strbuf_insert_str(destbuf, padbuf, 0);
     free(padbuf);
@@ -1228,11 +1246,11 @@ bool strbuf_padding_tail(char **destbuf, char c, size_t sz) {
     else if (len == sz) return true;
     size_t padlen = sz - len;
     char *padbuf = malloc(padlen + 1);
-    if (padbuf == NULL) return false;
+    if (!padbuf) return false;
     memset(padbuf, c, padlen);
-    strbuf_append_str(destbuf, padbuf);
+    bool ret = strbuf_append_str(destbuf, padbuf);
     free(padbuf);
-    return true;
+    return ret;
 }
 
 char *strbuf_clone(char *strbuf, bool bufsz) {
@@ -1246,7 +1264,12 @@ char *strbuf_clone(char *strbuf, bool bufsz) {
         }
         newbuf = strbuf_new_size(s);
     }
-    strbuf_append_str(&newbuf, strbuf);
+
+    if (!newbuf) return NULL;
+    else if (!strbuf_append_str(&newbuf, strbuf)) {
+        strbuf_free(newbuf);
+        return NULL;
+    }
     return newbuf;
 }
 
@@ -1331,6 +1354,7 @@ int strbuf_replace_first_str(char **destbuf, char *s, char *t) {
     strbuf_trim_index(&end, ind + strlen(s), strlen(*destbuf));
 
     char *buf = malloc(strlen(*destbuf) + strlen(t) - strlen(s) + 1);
+    if (!buf) return CLZ_GENERAL_FAIL;
     sprintf(buf, "%s%s%s", start, t, end);
     size_t len = strlen(buf);
     if (len >= strbuf_alloc_size(*destbuf)) {
@@ -1364,8 +1388,12 @@ bool strbuf_remove_char(char **destbuf, size_t index) {
     if (index >= strlen(*destbuf)) return false;
     char *newbuf = strbuf_new_size(strbuf_alloc_size(*destbuf));
     if (!newbuf) return false;
-    strbuf_append_strn(&newbuf, *destbuf, index);
-    strbuf_append_str(&newbuf, *destbuf + index + 1);
+    bool ret  = strbuf_append_strn(&newbuf, *destbuf, index)
+            && strbuf_append_str(&newbuf, *destbuf + index + 1);
+    if (!ret) {
+        strbuf_free(newbuf);
+        return false;
+    }
     strbuf_free(*destbuf);
     *destbuf = newbuf;
     return true;
@@ -1379,8 +1407,12 @@ bool strbuf_remove_str(char **destbuf, size_t start, size_t end) {
 
     char *newbuf = strbuf_new_size(strbuf_alloc_size(*destbuf));
     if (!newbuf) return false;
-    strbuf_append_strn(&newbuf, *destbuf, start);
-    strbuf_append_str(&newbuf, *destbuf + end);
+    bool ret = strbuf_append_strn(&newbuf, *destbuf, start)
+            && strbuf_append_str(&newbuf, *destbuf + end);
+    if (!ret) {
+        strbuf_free(newbuf);
+        return false;
+    }
     strbuf_free(*destbuf);
     *destbuf = newbuf;
     return true;
