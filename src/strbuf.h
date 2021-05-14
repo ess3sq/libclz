@@ -959,6 +959,7 @@ bool strbuf_reverse(char **destbuf);
 #endif
 
 #ifdef CLZ_STRBUF_IMPL
+#undef CLZ_STRBUF_IMPL
 
 #include <ctype.h>
 #include <stdlib.h>

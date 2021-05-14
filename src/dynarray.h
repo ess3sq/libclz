@@ -443,6 +443,7 @@ void *dynarray_pop(dynarray *d);
 #endif
 
 #ifdef CLZ_DYNARRAY_IMPL
+#undef CLZ_DYNARRAY_IMPL
 
 void *dynarray_init(dynarray *d) {
     d->alloc_size = CLZ_DYNARRAY_ALLOC;

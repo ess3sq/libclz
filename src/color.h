@@ -159,6 +159,7 @@ void col_reset();
 #endif
 
 #ifdef CLZ_COLOR_IMPL
+#undef CLZ_COLOR_IMPL
 
 #ifndef CLZ_NO_COLOR_FUNCTIONS
 

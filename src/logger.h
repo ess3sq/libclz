@@ -250,6 +250,7 @@ void logger_logf(logger *log, enum logger_severity level, char *fmt, ...);
 #endif
 
 #ifdef CLZ_LOGGER_IMPL
+#undef CLZ_LOGGER_IMPL
 
 logger *logger_default() {
     static logger *def = NULL;
