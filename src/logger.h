@@ -17,10 +17,6 @@
  */
 
 /**
- * @file logger.h
- * @author Lorenzo Calza
- * @date 8 May 2021
- * @brief Header file containing the implementation of a very basic and simple logging facility
  *
  * This implementation of a logger is meant for console or file logging with a single format, namely
  *
@@ -38,6 +34,13 @@
  *     [ERROR] This is just a very ugly message
  *     |2021-05-08 20:55:07| [FATAL] This is a naked logger, aks without name
  *     |2021-05-08 20:55:07| [INFO] (Full Logger) This is a full logger
+ *
+ *
+ * @file logger.h
+ * @author Lorenzo Calza
+ * @date 8 May 2021
+ * @brief Header file containing the implementation of a very basic and simple logging facility
+ *
  */
 
 #ifndef _CLZ_LOGGER_H

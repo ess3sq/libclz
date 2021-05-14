@@ -17,10 +17,6 @@
  */
 
 /**
- * @file color.h
- * @author Lorenzo Calza
- * @date 13 Nov 2020
- * @brief Header file containing the declarations for color console output utilities
  *
  * This header file contains the definitions of the color sequence macros and the standard output
  * setting functions
@@ -31,6 +27,12 @@
  * If forward-declarations of the function prototypes can be skipped if the macro `CLZ_NO_COLOR_FUNCTIONS`
  * is found to be defined. In this case, the implementation part is skipped too, regardless of whether the
  * implementation flag is active or not.
+ *
+ * @file color.h
+ * @author Lorenzo Calza
+ * @date 13 Nov 2020
+ * @brief Header file containing the declarations for color console output utilities
+ *
  */
 
 #ifndef _CLZ_COLOR_H

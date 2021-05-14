@@ -42,7 +42,6 @@
 #include <stdbool.h>
 
 #include "clz.h"
-#include "def.h"
 
 /**
  * @brief Definition of structure representing a dynamic array.
@@ -157,18 +156,22 @@ dynarray *dynarray_new();
  * as this function does not free it.
  * Example:
  *
+ * @code
  *     dynarray *d = dynarray_new();
  *     // ...
  *     dynarray_free(d);
  *     free(d);
+ * @endcode
  *
  * The reason why this behaviour is intended is that it is also possible to create a statically allocated @ref dynarray like this:
  *
+ * @code
  *     dynarray d;
  *     dynarray_init(&d);
  *     // ...
  *     dynarray_free(&d);
  *     free(&d) // WRONG! //
+ * @endcode
  *
  * See the examples for more information.
  *
@@ -340,6 +343,7 @@ int dynarray_find_first(dynarray *d, void *obj);
  *
  * Example:
  *
+ * @code
  *     dynarray *d = dynarray_new();
  *     // ...
  *     int pos;
@@ -349,6 +353,7 @@ int dynarray_find_first(dynarray *d, void *obj);
  *     dynarray_find_reset(d);
  *     // ...
  *     dynarray_free(d);
+ * @endcode
  *
  * The macro @ref dynarray_find_reset resets the search so that the dynarray is ready by the next time.
  * If this macro is not invoked, the search will resume from the last index where a match was found. If the last search
