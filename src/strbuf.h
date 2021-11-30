@@ -204,15 +204,21 @@ size_t strbuf_alloc_size(char *strbuf);
 /**
  * @brief Resizes buffer using `realloc`
  *
- * This function determines the next power of 2 greater than or equal to `minsize + 1`, then calls `realloc`
- * on the input buffer and lastly overwrites the original pointer to point to the new location.
- * To the programmer, the buffer has been magically stretched because they do not have to reassign anything.
+ * This function determines the next power of 2 greater than or equal to `minsize `, then proceeds on the
+ * input buffer in a manner analogous to `realloc` and lastly overwrites the original pointer to point to the
+ * new location. To the programmer, the buffer has been magically stretched because they do not have to reassign
+ * anything.
  *
  * If the specified parameter `minsize` is too small to hold the buffer contents including the null-terminator,
  * the buffer is **not** resized and `false` is returned. If what you are attempting to do is trim the string
- * within the buffer, use `strbuf_trim_length` or another function from the `strbuf_trim_...` family.
+ * within the buffer, use @ref strbuf_trim_length or another function from the `strbuf_trim_...` family.
  * Alternatively, if you are attempting to reduce the buffer size as much as possible, see
  * @ref strbuf_compress.
+ *
+ * Additionally, it should be noted that `minsize` should be greater than or equal to @ref CLZ_ALLOC_SIZE. If
+ * it is smaller than that, `minsize` will be redefined to @ref CLZ_STRBUF_ALLOC in order to ensure consistency
+ * with @ref strbuf_new_size. If `strlen(strbuf) + 1 > minsize` (aka. the min. size is too small to hold the string)
+ * `minsize` is silently reassigned to `strlen(strbuf) + 1`.
  *
  * **Notes**
  *
@@ -1164,10 +1170,15 @@ bool strbuf_insert_ullong(char **destbuf, unsigned long long l, size_t index) {
     return ret;
 }
 
+// TODO: short circuit cases docs
 bool strbuf_resize(char **dest, size_t minsize) {
+    if (minsize < CLZ_STRBUF_ALLOC)
+        return strbuf_resize(dest, CLZ_STRBUF_ALLOC);
+
     size_t sz, len = strlen(*dest);
-    if (len >= minsize + 1) return false;
-    for (sz = len + 1; sz < minsize; sz <<= 1);
+    if (len + 1 > minsize) minsize = len + 1;
+
+    for (sz = 1; sz < minsize || sz < len + 1; sz *= 2);
 
     char *newbuf = malloc(sz + sizeof(size_t));
     if (!newbuf) return false;
