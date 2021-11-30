@@ -8,7 +8,7 @@ CMakeLists.txt
 html/
 latex/
 cmake-build-debug/
-test/
+test/*.out
 .idea/
 *.stackdump
 
