@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define PASS_IF(cond)   \
-    if (succ) {         \
+    if (cond) {         \
         B_PASS();       \
     }                   \
     else {              \
@@ -205,7 +205,128 @@ void test_resize() {
     if (strbuf_alloc_size(buf) != 64) succ = false;
 
     strbuf_free(buf);
+
     PASS_IF(succ);
+}
+
+void test_compress() {
+    bool succ = true;
+
+    size_t small_sizes[] = {0,1,2,3,4,5,6,7,8,9,10,14,18,20,30,31,32};
+    for (size_t i; i < sizeof(small_sizes) / sizeof(small_sizes[0]); ++i) {
+        char *buf = strbuf_new_size(small_sizes[i]);
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+        strcpy(buf, "Hello.");
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_compress(&buf);
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_free(buf);
+    }
+
+    size_t big_sizes[] = {33, 34, 35, 40, 50, 60, 62, 63, 64};
+    for (size_t i; i < sizeof(big_sizes) / sizeof(big_sizes[0]); ++i) {
+        char *buf = strbuf_new_size(big_sizes[i]);
+        if (strbuf_alloc_size(buf) != 64) succ = false;
+        strcpy(buf, "Hello.");
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_compress(&buf);
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_free(buf);
+    }
+
+    size_t very_big_sizes[] = {65, 100, 125, 126, 127, 128};
+    for (size_t i; i < sizeof(very_big_sizes) / sizeof(very_big_sizes[0]); ++i) {
+        char *buf = strbuf_new_size(very_big_sizes[i]);
+        if (strbuf_alloc_size(buf) != 128) succ = false;
+        strcpy(buf, "Hello.");
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_compress(&buf);
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+        if (strlen(buf) != strlen("Hello.")) succ = false;
+        strbuf_free(buf);
+    }
+
+    PASS_IF(succ);
+}
+
+void test_append_char() {
+    bool succ = true;
+    char *buf;
+    char init [1000];
+
+    memset(init, 0, sizeof(init));
+    strcpy(init, "Hello, World!");
+    buf = strbuf_new_str(init);
+
+    if (strlen(init) != strlen(buf)) succ = false;
+    strbuf_append_char(&buf, '!');
+    init[strlen(init)] = '!';
+    if (strlen(init) != strlen(buf)) succ = false;
+    if (strcmp(init, buf)) succ = false;
+
+    strbuf_free(buf);
+    buf = strbuf_new_str("A string that is 31 chars long.");
+
+    if (strbuf_alloc_size(buf) != 32) succ = false;
+    if (strlen(buf) != 31) succ = false;
+    strbuf_append_char(&buf, 'G');
+    if (strbuf_alloc_size(buf) != 64) succ = false;
+    if (strlen(buf) != 32) succ = false;
+    if (strcmp(buf, "A string that is 31 chars long.G")) succ = false;
+
+    strbuf_free(buf);
+    buf = strbuf_new();
+    if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+    if (strlen(buf) != 0) succ = false;
+    if (strcmp(buf, "")) succ = false;
+
+    char manual[CLZ_STRBUF_ALLOC * 2];
+    memset(manual, 0, CLZ_STRBUF_ALLOC * 2);
+
+    for (size_t i = 0; i < CLZ_STRBUF_ALLOC - 1; ++i) {
+        strbuf_append_char(&buf, '#');
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+        manual[i] = '#';
+        if (strcmp(buf, manual)) succ = false;
+    }
+
+    if (strlen(manual) != CLZ_STRBUF_ALLOC - 1) succ = false;
+    if (strlen(buf) != CLZ_STRBUF_ALLOC - 1) succ = false;
+    if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC) succ = false;
+
+    printf("s = %d\n", succ);
+
+    for (size_t i = 0; i < CLZ_STRBUF_ALLOC; ++i) {
+        strbuf_append_char(&buf, '#');
+        if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC * 2) succ = false;
+        manual[i + CLZ_STRBUF_ALLOC - 1] = '#';
+        if (strcmp(buf, manual)) succ = false;
+    }
+
+    if (strlen(manual) != CLZ_STRBUF_ALLOC * 2 - 1) succ = false;
+    if (strlen(buf) != CLZ_STRBUF_ALLOC * 2 - 1) succ = false;
+    if (strbuf_alloc_size(buf) != CLZ_STRBUF_ALLOC * 2) succ = false;
+
+    strbuf_free(buf);
+    PASS_IF(succ);
+}
+
+void test_append_str() {
+    B_SKIP();
+}
+
+void test_append_int() {
+    B_SKIP();
+}
+
+void test_append_long() {
+    B_SKIP();
+}
+
+void test_append_llong() {
+    B_SKIP();
 }
 
 int main(void) {
@@ -214,6 +335,12 @@ int main(void) {
     test_new_str();
     test_clone();
     test_resize();
+    test_compress();
+    test_append_char();
+    test_append_str();
+    test_append_int();
+    test_append_long();
+    test_append_llong();
 
     B_SUMMARY();
     return 0;

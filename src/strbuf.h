@@ -1032,13 +1032,19 @@ bool strbuf_append_str(char **dest, char *src) {
 }
 
 bool strbuf_append_strn(char **dest, char *src, size_t n) {
-    size_t minsize = strlen(*dest) + strlen(src) + 1;
+    size_t orig_len = strlen(*dest);
+    size_t src_len  = strlen(src);
+    size_t minsize  = orig_len + src_len + 1;
+
     if (strbuf_alloc_size(*dest) < minsize) {
         if (!strbuf_resize(dest, minsize)) {
             return false;
         }
-    }
-    strncpy(*dest + strlen(*dest), src, n);
+    } // "" => "Hello, World!"
+
+    strncpy(*dest + orig_len, src, n);
+    if (src_len >= n)
+        *(*dest + orig_len + n) = '\0';
     return true;
 }
 
